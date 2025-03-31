@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CPU Scheduling Simulator (SRTF) with Video Controls</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 30px;
+        background-color: #f5f5f5;
+        color: #333;
+        text-align: center;
+      }
+      .container {
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        font-size: 28px;
+        color: #2c3e50;
+      }
+      h3 {
+        font-size: 20px;
+        color: #555;
+        margin-bottom: 20px;
+      }
+      .input-section,
+      .control-section,
+      .video-controls {
+        margin-bottom: 20px;
+      }
+      input,
+      button,
+      select {
+        font-size: 18px;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        outline: none;
+        cursor: pointer;
+      }
+      input {
+        width: 120px;
+        text-align: center;
+        background: #fff;
+      }
+      button {
+        background: #3498db;
+        color: white;
+        transition: 0.3s;
+        margin: 5px;
+      }
+      button:hover {
+        background: #2980b9;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        font-size: 18px;
+        background: #ecf0f1;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: center;
+        border: 1px solid #ddd;
+      }
+      th {
+        background: #3498db;
+        color: white;
+      }
+      tr:nth-child(even) {
+        background: #f2f2f2;
+      }
+      .gantt-heading {
+        font-size: 22px;
+        font-weight: bold;
+        margin-top: 30px;
+      }
+      .gantt-chart {
+        display: flex;
+        align-items: flex-end;
+        justify-content: start;
+        overflow-x: auto;
+        margin-top: 10px;
+        padding: 15px;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        min-height: 100px;
+      }
+      .gantt-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-right: 5px;
+      }
+      .gantt-block {
+        padding: 10px 15px;
+        margin: 3px;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 5px;
+        transition: transform 0.3s ease-in-out, opacity 0.5s ease-in;
+        color: white;
+        text-align: center;
+        opacity: 0;
+      }
+      .gantt-block.show {
+        opacity: 1;
+      }
+      .idle {
+        background: #ffcccc !important;
+        border: 2px dashed #e74c3c;
+        color: #e74c3c;
+      }
+      .gantt-time {
+        font-size: 16px;
+        font-weight: bold;
+        font-family: "Courier New", monospace;
+        color: #333;
+        margin-top: 5px;
+        width: 80%;
+        display: flex;
+        justify-content: space-between;
+      }
+      /* Ready Queue Section */
+      .ready-queue-section {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f0f0f0;
+        border-radius: 8px;
+        text-align: left;
+      }
+      .ready-queue-section h3 {
+        margin-top: 0;
+      }
+      .ready-item {
+        display: inline-block;
+        padding: 8px 12px;
+        margin: 5px;
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        border-radius: 4px;
+        transition: background 0.5s ease-out, opacity 0.5s ease-out;
+      }
+      .ready-item.removed {
+        background: #f8d7da;
+        opacity: 0.5;
+      }
+      .metrics {
+        background: #e8f5e9;
+        padding: 20px;
+        margin-top: 20px;
+        border-radius: 8px;
+        font-size: 18px;
+      }
+      /* Dropdown styling for speed control */
+      .speed-control {
+        margin-top: 10px;
+      }
+      /* New Control Row styling: Display controls side by side */
+      .control-row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>CPU Scheduling Simulator</h1>
+      <h3>Algorithm - Shortest Remaining Time First (SRTF)</h3>
+
+      <!-- Gantt Chart Section (moved above table) -->
+      <div class="gantt-heading">Gantt Chart</div>
+      <div class="gantt-chart" id="ganttChart"></div>
+
+      <!-- Ready Queue Section (moved above table) -->
+      <div class="ready-queue-section">
+        <h3>Ready Queue</h3>
+        <div id="readyQueueSection"></div>
+      </div>
+
+      <!-- Input Section: Generate Table -->
+      <div class="input-section">
+        <label style="font-size: 20px">Number of Processes:</label>
+        <input type="number" id="processCount" min="1" value="3" />
+        <button onclick="createProcessTable()">Generate Table</button>
+      </div>
+
+      <!-- Process Table -->
+      <table id="processTable">
+        <thead>
+          <tr>
+            <th>Process ID</th>
+            <th>Arrival Time</th>
+            <th>Burst Time</th>
+            <th>Completion Time</th>
+            <th>Waiting Time</th>
+            <th>Turnaround Time</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- Table rows are generated dynamically -->
+        </tbody>
+      </table>
+
+      <!-- Control Row: Calculate, Speed, and Video Controls side by side -->
+      <div class="control-row">
+        <button onclick="calculateSRTF()">Calculate</button>
+        <div class="control-section">
+          <label for="speedSelect" style="font-size: 20px">Speed:</label>
+          <select
+            id="speedSelect"
+            class="speed-control"
+            onchange="setSpeed(parseFloat(this.value))">
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+          </select>
+        </div>
+        <div class="video-controls">
+          <button onclick="rewindSimulation()">⏮</button>
+          <button onclick="backwardStep()">⏪</button>
+          <button id="playPauseBtn" onclick="togglePlayPause()">▶</button>
+          <button onclick="forwardStep()">⏩</button>
+        </div>
+      </div>
+
+      <!-- Performance Metrics displayed at the end -->
+      <div class="metrics" id="metrics"></div>
+    </div>
+
+    <script>
+      // Global simulation state variables
+      let simulationSteps = [];
+      let currentStepIndex = -1;
+      let isPlaying = false;
+      let speedMultiplier = 1.0; // default speed 1x
+      let ganttBlocks = []; // to store DOM elements for each applied step
+      let currentReadyQueue = []; // tracks current ready queue (array of process IDs)
+      const baseLatency = 500; // base delay per time unit
+
+      // Utility sleep function (non-blocking)
+      function sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      // Controlled sleep used during auto-play (divides waiting into small intervals)
+      async function controlledSleep(ms) {
+        const interval = 50;
+        let elapsed = 0;
+        while (elapsed < ms) {
+          if (!isPlaying) break;
+          await sleep(interval);
+          elapsed += interval;
+        }
+      }
+
+      // Create table rows with input values; completion, waiting, and turnaround cells are blank
+      function createProcessTable() {
+        const count = parseInt(document.getElementById("processCount").value);
+        const tbody = document.getElementById("tableBody");
+        tbody.innerHTML = "";
+        for (let i = 0; i < count; i++) {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td><input type="text" value="P${i + 1}" readonly></td>
+            <td><input type="number" value="${i}" /></td>
+            <td><input type="number" value="${Math.floor(
+              Math.random() * 5 + 1
+            )}" /></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          `;
+          tbody.appendChild(row);
+        }
+      }
+
+      // Compute the simulation steps using Shortest Remaining Time First (SRTF) algorithm.
+      // The simulation is done in 1 time-unit increments and generates steps for the Gantt chart.
+      function computeSimulationSteps(processes) {
+        let steps = [];
+        const n = processes.length;
+        let remainingTime = processes.map((p) => p.burst);
+        let completed = 0;
+        let currentTime = 0;
+
+        while (completed < n) {
+          // Get available processes that have arrived and are not completed
+          let available = processes.filter(
+            (p, i) => p.arrival <= currentTime && remainingTime[i] > 0
+          );
+          let readyQueue = available.map((p) => p.pid);
+
+          if (available.length === 0) {
+            // Idle until the next arrival if no process is available
+            let nextArrival = Math.min(
+              ...processes
+                .filter((p) => p.arrival > currentTime)
+                .map((p) => p.arrival)
+            );
+            steps.push({
+              type: "idle",
+              pid: "Idle",
+              start: currentTime,
+              end: nextArrival,
+              duration: nextArrival - currentTime,
+              readyQueue: [],
+            });
+            currentTime = nextArrival;
+            continue;
+          }
+          // Select the process with the smallest remaining time
+          available.sort(
+            (a, b) => remainingTime[a.index] - remainingTime[b.index]
+          );
+          let proc = available[0];
+          let step = {
+            type: "process",
+            pid: proc.pid,
+            start: currentTime,
+            end: currentTime + 1,
+            duration: 1,
+            processIndex: proc.index,
+            waitingTime: null,
+            turnaroundTime: null,
+            readyQueue: readyQueue,
+          };
+          steps.push(step);
+          remainingTime[proc.index] -= 1;
+          currentTime += 1;
+          // When a process finishes, record its metrics in the final step
+          if (remainingTime[proc.index] === 0) {
+            let completionTime = currentTime;
+            step.waitingTime = completionTime - proc.arrival - proc.burst;
+            step.turnaroundTime = completionTime - proc.arrival;
+            completed++;
+          }
+        }
+        // Merge consecutive steps for the same process (for visualization clarity)
+        let mergedSteps = [];
+        if (steps.length > 0) {
+          let prev = steps[0];
+          for (let i = 1; i < steps.length; i++) {
+            let curr = steps[i];
+            if (
+              curr.type === prev.type &&
+              curr.pid === prev.pid &&
+              curr.type !== "idle"
+            ) {
+              prev.end = curr.end;
+              prev.duration += curr.duration;
+              if (curr.waitingTime !== null) {
+                prev.waitingTime = curr.waitingTime;
+                prev.turnaroundTime = curr.turnaroundTime;
+              }
+            } else {
+              mergedSteps.push(prev);
+              prev = curr;
+            }
+          }
+          mergedSteps.push(prev);
+        }
+        return mergedSteps;
+      }
+
+      // Global variable to store process objects (each includes table row element)
+      let processes = [];
+
+      // Calculate simulation: precompute steps, clear previous simulation outputs,
+      // and clear table metrics. Also resets the ready queue section.
+      function calculateSRTF() {
+        isPlaying = false;
+        document.getElementById("playPauseBtn").textContent = "▶";
+
+        document.getElementById("ganttChart").innerHTML = "";
+        document.getElementById("metrics").innerHTML = "";
+        document.getElementById("readyQueueSection").innerHTML = "";
+        ganttBlocks = [];
+        currentStepIndex = -1;
+        simulationSteps = [];
+        currentReadyQueue = [];
+
+        processes = [];
+        const rows = document.querySelectorAll("#tableBody tr");
+        rows.forEach((row, index) => {
+          const cells = row.querySelectorAll("input");
+          processes.push({
+            pid: cells[0].value,
+            arrival: parseInt(cells[1].value),
+            burst: parseInt(cells[2].value),
+            index: index,
+            rowElement: row,
+          });
+          row.children[3].textContent = "";
+          row.children[4].textContent = "";
+          row.children[5].textContent = "";
+        });
+
+        simulationSteps = computeSimulationSteps(processes);
+      }
+
+      const scaleFactor = 30; // pixels per time unit for Gantt block width
+
+      // Update the Ready Queue section based on a new readyQueue list (array of process IDs)
+      function updateReadyQueue(newQueue) {
+        const readyQueueDiv = document.getElementById("readyQueueSection");
+
+        Array.from(readyQueueDiv.children).forEach((item) => {
+          const pid = item.getAttribute("data-pid");
+          if (!newQueue.includes(pid) && !item.classList.contains("removed")) {
+            item.classList.add("removed");
+            setTimeout(() => {
+              item.remove();
+            }, 800);
+          }
+        });
+
+        newQueue.forEach((pid) => {
+          if (
+            !document.querySelector(`#readyQueueSection [data-pid="${pid}"]`)
+          ) {
+            const newItem = document.createElement("div");
+            newItem.classList.add("ready-item");
+            newItem.setAttribute("data-pid", pid);
+            newItem.textContent = pid;
+            readyQueueDiv.appendChild(newItem);
+          }
+        });
+
+        currentReadyQueue = newQueue;
+      }
+
+      // Apply a simulation step: add a block to the Gantt chart, update table,
+      // and update the ready queue section.
+      function applyStep(step) {
+        const ganttChart = document.getElementById("ganttChart");
+        const blockContainer = document.createElement("div");
+        blockContainer.classList.add("gantt-container");
+        const blockDiv = document.createElement("div");
+        blockDiv.classList.add("gantt-block");
+        blockDiv.style.width = step.duration * scaleFactor + "px";
+        if (step.type === "idle") {
+          blockDiv.classList.add("idle");
+        } else {
+          const colors = [
+            "#1abc9c",
+            "#3498db",
+            "#9b59b6",
+            "#f39c12",
+            "#e67e22",
+          ];
+          blockDiv.style.backgroundColor =
+            colors[processes[step.processIndex].index % colors.length];
+        }
+        blockDiv.textContent = step.pid;
+        const timeDiv = document.createElement("div");
+        timeDiv.classList.add("gantt-time");
+        timeDiv.innerHTML = `<span>${step.start}</span><span>${step.end}</span>`;
+        blockContainer.appendChild(blockDiv);
+        blockContainer.appendChild(timeDiv);
+        ganttChart.appendChild(blockContainer);
+        setTimeout(() => {
+          blockDiv.classList.add("show");
+        }, 50);
+        ganttBlocks.push(blockContainer);
+        // Update table metrics if this step marks process completion
+        if (step.type === "process" && step.waitingTime !== null) {
+          const row = processes[step.processIndex].rowElement;
+          row.children[3].textContent = step.end; // Completion Time
+          row.children[4].textContent = step.waitingTime; // Waiting Time
+          row.children[5].textContent = step.turnaroundTime; // Turnaround Time
+        }
+        updateReadyQueue(step.readyQueue);
+      }
+
+      // Remove a simulation step (remove the corresponding Gantt block and clear table update if process step)
+      function removeStep(step) {
+        const removed = ganttBlocks.pop();
+        if (removed) {
+          removed.remove();
+        }
+        if (step.type === "process" && step.waitingTime !== null) {
+          const row = processes[step.processIndex].rowElement;
+          row.children[3].textContent = "";
+          row.children[4].textContent = "";
+          row.children[5].textContent = "";
+        }
+      }
+
+      // Video control functions
+      function forwardStep() {
+        if (currentStepIndex < simulationSteps.length - 1) {
+          currentStepIndex++;
+          applyStep(simulationSteps[currentStepIndex]);
+        }
+      }
+
+      function backwardStep() {
+        if (currentStepIndex >= 0) {
+          removeStep(simulationSteps[currentStepIndex]);
+          currentStepIndex--;
+        }
+      }
+
+      function rewindSimulation() {
+        while (currentStepIndex >= 0) {
+          removeStep(simulationSteps[currentStepIndex]);
+          currentStepIndex--;
+        }
+        document.getElementById("readyQueueSection").innerHTML = "";
+        currentReadyQueue = [];
+      }
+
+      async function playSimulation() {
+        isPlaying = true;
+        document.getElementById("playPauseBtn").textContent = "⏸";
+        while (isPlaying && currentStepIndex < simulationSteps.length - 1) {
+          forwardStep();
+          let step = simulationSteps[currentStepIndex];
+          let delay = (step.duration * baseLatency) / speedMultiplier;
+          delay = Math.max(delay, 300);
+          await controlledSleep(delay);
+        }
+        if (currentStepIndex === simulationSteps.length - 1) {
+          let totalWaiting = 0,
+            totalTurnaround = 0;
+          const finished = new Set();
+          // Only count metrics once per process (from the step where it finished)
+          simulationSteps.forEach((step) => {
+            if (
+              step.type === "process" &&
+              step.waitingTime !== null &&
+              !finished.has(step.pid)
+            ) {
+              totalWaiting += step.waitingTime;
+              totalTurnaround += step.turnaroundTime;
+              finished.add(step.pid);
+            }
+          });
+          document.getElementById("metrics").innerHTML = `
+            <h3>Performance Metrics:</h3>
+            <p>Average Waiting Time: ${(
+              totalWaiting / processes.length
+            ).toFixed(2)}</p>
+            <p>Average Turnaround Time: ${(
+              totalTurnaround / processes.length
+            ).toFixed(2)}</p>
+          `;
+        }
+        isPlaying = false;
+        document.getElementById("playPauseBtn").textContent = "▶";
+      }
+
+      function togglePlayPause() {
+        if (isPlaying) {
+          isPlaying = false;
+          document.getElementById("playPauseBtn").textContent = "▶";
+        } else {
+          playSimulation();
+        }
+      }
+
+      function setSpeed(multiplier) {
+        speedMultiplier = multiplier;
+      }
+
+      window.onload = createProcessTable;
+    </script>
+  </body>
+</html>
