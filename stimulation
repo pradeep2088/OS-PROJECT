@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CPU Scheduling Simulation</title>
+  <!-- Import Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inknut+Antiqua:wght@400;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #333333;
+      --secondary-color: #555555;
+      /* Updated accent to a warm burnt-orange */
+      --accent-color: #d35400;
+      --btn-bg: #d35400;
+      --btn-bg-hover: #b03a2e;
+      
+      --bg-gradient-start: #f9f9f9;
+      --bg-gradient-end: #e0e0e0;
+      
+      --container-gradient-start: #ffffff;
+      --container-gradient-end: #f0f0f0;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+      color: var(--primary-color);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      padding: 15px 40px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: top 0.3s ease;
+    }
+    
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo {
+      font-family: 'Poppins', sans-serif;
+      color: var(--primary-color);
+      font-size: 2.5rem;
+      font-weight: bold;
+    }
+    
+    .nav-links {
+      list-style: none;
+      display: flex;
+    }
+    
+    .nav-links li {
+      margin-left: 25px;
+    }
+    
+    .nav-links a {
+      text-decoration: none;
+      color: var(--primary-color);
+      font-weight: 600;
+      font-size: 1.2rem;
+      position: relative;
+      transition: color 0.3s ease;
+    }
+    
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      width: 0;
+      height: 3px;
+      background: var(--accent-color);
+      left: 0;
+      bottom: -5px;
+      transition: width 0.4s ease;
+    }
+    
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+    
+    .nav-links a:hover {
+      color: var(--accent-color);
+    }
+    
+    .content-section {
+      padding: 120px 40px 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    
+    .content-section h1 {
+      font-family: 'Inknut Antiqua', serif;
+      font-size: 3rem;
+      margin-bottom: 20px;
+    }
+    
+    .content-section p {
+      font-size: 1.2rem;
+      margin-bottom: 40px;
+      color: var(--secondary-color);
+    }
+    
+    /* Grid Layout: 3-up grid on large screens */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      margin-top: 20px;
+    }
+    
+    .grid-item {
+      background: linear-gradient(135deg, var(--container-gradient-start) 0%, var(--container-gradient-end) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      animation: fadeIn 1s ease forwards;
+    }
+    
+    /* Staggered fade-in delays for grid items */
+    .grid-item:nth-child(1) { animation-delay: 0.2s; }
+    .grid-item:nth-child(2) { animation-delay: 0.4s; }
+    .grid-item:nth-child(3) { animation-delay: 0.6s; }
+    .grid-item:nth-child(4) { animation-delay: 0.8s; }
+    .grid-item:nth-child(5) { animation-delay: 1s; }
+    .grid-item:nth-child(6) { animation-delay: 1.2s; }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .grid-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    .grid-item h3 {
+      font-family: 'Inknut Antiqua', serif;
+      font-size: 2.2rem;
+      color: var(--accent-color);
+      margin-bottom: 20px;
+      word-wrap: break-word;
+    }
+    
+    .get-started-btn {
+      display: inline-block;
+      background-color: var(--btn-bg);
+      color: #fff;
+      padding: 12px 25px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: background 0.3s ease, transform 0.3s ease;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .get-started-btn:hover {
+      background-color: var(--btn-bg-hover);
+      transform: scale(1.05);
+    }
+    
+    /* Dynamic floating animation background for grid items */
+    .grid-item::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, var(--accent-color) 10%, transparent 10%);
+      background-size: 50px 50px;
+      opacity: 0.05;
+      animation: float 6s ease-in-out infinite;
+      z-index: 1;
+    }
+    
+    @keyframes float {
+      0% { transform: translate(0, 0); }
+      50% { transform: translate(10px, 10px); }
+      100% { transform: translate(0, 0); }
+    }
+    
+    /* Footer styling */
+    footer {
+      background: #fff;
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+      padding: 20px 40px;
+      text-align: center;
+      color: var(--secondary-color);
+      font-size: 0.9rem;
+      margin-top: 40px;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 1024px) {
+      .grid-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .grid-container {
+        grid-template-columns: 1fr;
+      }
+      .content-section {
+        padding: 100px 20px 40px;
+      }
+      .grid-item h3 {
+        font-size: 1.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Common Header -->
+  <header>
+    <nav>
+      <div class="logo">CPU Scheduling</div>
+      <ul class="nav-links">
+        <li><a href="home.html">Home</a></li>
+        <li><a href="algorithms.html">Algorithms</a></li>
+        <li><a href="simulation.html">Simulation</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+  
+  <!-- Main Content Section -->
+  <section class="content-section">
+    <h1>CPU Scheduling Simulation</h1>
+    <p>Select an algorithm below to begin your simulation experience.</p>
+    <div class="grid-container">
+      <div class="grid-item">
+        <h3>First Come First Serve (FCFS)</h3>
+        <a class="get-started-btn" href="algorithms/FirstComeFirstServe.html">Get Started</a>
+      </div>
+      <div class="grid-item">
+        <h3>Shortest Job First (SJF)</h3>
+        <a class="get-started-btn" href="algorithms/ShortestJobFirst.html">Get Started</a>
+      </div>
+      <div class="grid-item">
+        <h3>Priority (Preemptive)</h3>
+        <a class="get-started-btn" href="algorithms/priprity_scheduling_preemption.html">Get Started</a>
+      </div>
+      <div class="grid-item">
+        <h3>Priority (Non‑Preemptive)</h3>
+        <a class="get-started-btn" href="algorithms/priority_Sheduling_withoutpreemption.html">Get Started</a>
+      </div>
+      <div class="grid-item">
+        <h3>Shortest Remaining Time First (SRTF)</h3>
+        <a class="get-started-btn" href="algorithms/SRTF.html">Get Started</a>
+      </div>
+      <div class="grid-item">
+        <h3>Round Robin (RR)</h3>
+        <a class="get-started-btn" href="algorithms/roundRobin.html">Get Started</a>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Footer -->
+  <footer>
+    &copy; 2025 CPU Scheduling Simulator. All rights reserved.
+  </footer>
+  
+  <script>
+    // Header hide/show behavior on scroll
+    let lastScrollTop = 0;
+    const header = document.querySelector("header");
+    window.addEventListener("scroll", function() {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      header.style.top = (scrollTop > lastScrollTop && scrollTop > 100) ? "-80px" : "0";
+      lastScrollTop = scrollTop;
+    });
+    
+    document.addEventListener("mousemove", function(e) {
+      if (e.clientY < 50) header.style.top = "0";
+    });
+  </script>
+</body>
+</html>
